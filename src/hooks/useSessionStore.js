@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { generateId } from '../utils/timeUtils';
+import { cloudGetSessions, cloudSaveSessions } from '../services/cloudStore';
 
 const STORAGE_KEY = 'slock_sessions';
 
@@ -22,6 +23,7 @@ function loadAllSessions() {
 export function useSessionStore(currentUser) {
   const [allSessions, setAllSessions] = useState(() => loadAllSessions());
 
+  // Save to local storage
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(allSessions));
@@ -32,7 +34,7 @@ export function useSessionStore(currentUser) {
 
   const currentUserId = currentUser?.id || 'local_device';
 
-  // If a user logs in, automatically migrate any unassigned local sessions to their account
+  // 1. If user logs in, migrate unassigned local sessions to their account
   useEffect(() => {
     if (currentUser?.id) {
       setAllSessions((prev) => {
@@ -45,6 +47,32 @@ export function useSessionStore(currentUser) {
           return s;
         });
         return changed ? updated : prev;
+      });
+    }
+  }, [currentUser?.id]);
+
+  // 2. Cross-device sync: fetch sessions from Cloud Redis when user is logged in
+  useEffect(() => {
+    if (currentUser?.id) {
+      cloudGetSessions(currentUser.id).then((cloudSessions) => {
+        if (cloudSessions && cloudSessions.length > 0) {
+          setAllSessions((prev) => {
+            const map = new Map();
+            // Start with cloud sessions
+            cloudSessions.forEach((s) => map.set(s.id, s));
+            // Add local sessions that aren't in cloud yet
+            prev.forEach((s) => {
+              if (!map.has(s.id)) {
+                map.set(s.id, s);
+              }
+            });
+            const merged = Array.from(map.values());
+            // Sync back complete merged list to cloud
+            const userOnly = merged.filter((s) => s.userId === currentUser.id);
+            cloudSaveSessions(currentUser.id, userOnly);
+            return merged;
+          });
+        }
       });
     }
   }, [currentUser?.id]);
@@ -66,40 +94,50 @@ export function useSessionStore(currentUser) {
         ...session,
         createdAt: new Date().toISOString(),
       };
-      setAllSessions((prev) => [newSession, ...prev]);
 
-      // If online and user has account, attempt background sync if endpoint exists
-      if (currentUser?.id) {
-        try {
-          fetch('/api/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUser.id, session: newSession }),
-          }).catch(() => {});
-        } catch {
-          // offline or running standalone without backend
+      setAllSessions((prev) => {
+        const updated = [newSession, ...prev];
+        // Save to cloud if logged in
+        if (currentUser?.id) {
+          const userOnly = updated.filter((s) => s.userId === currentUser.id);
+          cloudSaveSessions(currentUser.id, userOnly);
         }
-      }
+        return updated;
+      });
 
       return newSession;
     },
     [currentUserId, currentUser?.id]
   );
 
-  const removeSession = useCallback((id) => {
-    setAllSessions((prev) => prev.filter((s) => s.id !== id));
-  }, []);
+  const removeSession = useCallback(
+    (id) => {
+      setAllSessions((prev) => {
+        const remaining = prev.filter((s) => s.id !== id);
+        if (currentUser?.id) {
+          const userOnly = remaining.filter((s) => s.userId === currentUser.id);
+          cloudSaveSessions(currentUser.id, userOnly);
+        }
+        return remaining;
+      });
+    },
+    [currentUser?.id]
+  );
 
   const clearAllSessions = useCallback(() => {
     // Clear only active user/guest sessions
-    setAllSessions((prev) =>
-      prev.filter((s) => {
+    setAllSessions((prev) => {
+      const remaining = prev.filter((s) => {
         if (currentUser?.id) {
           return s.userId !== currentUser.id;
         }
         return s.userId && s.userId !== 'local_device';
-      })
-    );
+      });
+      if (currentUser?.id) {
+        cloudSaveSessions(currentUser.id, []);
+      }
+      return remaining;
+    });
   }, [currentUser?.id]);
 
   /**

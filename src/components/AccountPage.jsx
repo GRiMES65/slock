@@ -12,8 +12,9 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
@@ -27,27 +28,41 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
         setErrorMsg('Passwords do not match');
         return;
       }
-      const res = signUp(username, password);
-      if (!res.success) {
-        setErrorMsg(res.error);
-      } else {
-        setSuccessMsg(`Welcome, ${res.user.username}! Your account is created.`);
-        setUsername('');
-        setPassword('');
-        setConfirmPassword('');
+      setLoading(true);
+      try {
+        const res = await signUp(username, password);
+        if (!res.success) {
+          setErrorMsg(res.error);
+        } else {
+          setSuccessMsg(`Welcome, ${res.user.username}! Your account is ready.`);
+          setUsername('');
+          setPassword('');
+          setConfirmPassword('');
+        }
+      } catch {
+        setErrorMsg('Network error. Please try again.');
+      } finally {
+        setLoading(false);
       }
     } else {
       if (!username.trim() || !password.trim()) {
         setErrorMsg('Please enter your username and password');
         return;
       }
-      const res = signIn(username, password);
-      if (!res.success) {
-        setErrorMsg(res.error);
-      } else {
-        setSuccessMsg(`Welcome back, ${res.user.username}!`);
-        setUsername('');
-        setPassword('');
+      setLoading(true);
+      try {
+        const res = await signIn(username, password);
+        if (!res.success) {
+          setErrorMsg(res.error);
+        } else {
+          setSuccessMsg(`Welcome back, ${res.user.username}!`);
+          setUsername('');
+          setPassword('');
+        }
+      } catch {
+        setErrorMsg('Network error. Please try again.');
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -288,9 +303,12 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
 
           <button
             type="submit"
-            className="w-full brutal-btn py-3.5 text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer mt-2"
+            disabled={loading}
+            className="w-full brutal-btn py-3.5 text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50 disabled:pointer-events-none"
           >
-            {mode === 'register' ? (
+            {loading ? (
+              <span>Authenticating...</span>
+            ) : mode === 'register' ? (
               <>
                 <UserPlus className="w-4 h-4" />
                 <span>Create Personal Account</span>

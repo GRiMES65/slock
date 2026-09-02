@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { generateId } from '../utils/timeUtils';
+import { cloudGetUser, cloudSaveUser, cloudDeleteUser } from '../services/cloudStore';
 
 const USERS_STORAGE_KEY = 'slock_users';
 const CURRENT_USER_KEY = 'slock_current_user';
@@ -31,13 +32,14 @@ function loadCurrentUser(cleanUsers) {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.id) {
-        // If it was the legacy auto-created user_main, clear it immediately
         if (parsed.id === 'user_main') {
           localStorage.removeItem(CURRENT_USER_KEY);
           return null;
         }
         const found = cleanUsers.find((u) => u.id === parsed.id);
         if (found) return found;
+        // If stored user exists even if not in local array (e.g. cloud synced previously)
+        return parsed;
       }
     }
   } catch {
@@ -73,10 +75,10 @@ export function useAuth() {
   }, [currentUser]);
 
   /**
-   * Create a new account
+   * Create a new account (Saves locally + pushes to Cloud Redis for cross-device access)
    */
   const signUp = useCallback(
-    (rawUsername, rawPassword) => {
+    async (rawUsername, rawPassword) => {
       const username = rawUsername.trim();
       const password = rawPassword.trim();
 
@@ -90,12 +92,22 @@ export function useAuth() {
         return { success: false, error: 'Password is required' };
       }
 
-      // Check if username is already taken
-      const exists = users.some(
+      // Check if username is already taken locally
+      const localExists = users.some(
         (u) => u.username.toLowerCase() === username.toLowerCase()
       );
-      if (exists) {
+      if (localExists) {
         return { success: false, error: 'Username already exists. Please sign in.' };
+      }
+
+      // Also check cloud database
+      try {
+        const cloudUser = await cloudGetUser(username);
+        if (cloudUser) {
+          return { success: false, error: 'Username already taken across devices. Please sign in.' };
+        }
+      } catch {
+        // Fallback to local
       }
 
       const newUser = {
@@ -105,19 +117,28 @@ export function useAuth() {
         createdAt: new Date().toISOString(),
       };
 
+      // Save locally
       const updated = [...users, newUser];
       setUsers(updated);
       setCurrentUser(newUser);
+
+      // Push to Cloud Redis so phone and other computers can log in immediately
+      try {
+        await cloudSaveUser(newUser);
+      } catch (err) {
+        console.warn('Failed to sync new user to cloud:', err);
+      }
+
       return { success: true, user: newUser };
     },
     [users]
   );
 
   /**
-   * Sign in with existing credentials
+   * Sign in with existing credentials (Checks local, falls back to Cloud Redis across devices)
    */
   const signIn = useCallback(
-    (rawUsername, rawPassword) => {
+    async (rawUsername, rawPassword) => {
       const username = rawUsername.trim();
       const password = rawPassword.trim();
 
@@ -128,12 +149,30 @@ export function useAuth() {
         return { success: false, error: 'Password is required' };
       }
 
-      const found = users.find(
+      // 1. Check local storage
+      let found = users.find(
         (u) => u.username.toLowerCase() === username.toLowerCase()
       );
 
+      // 2. If not found locally, query Cloud Redis (e.g. account created on another device like computer)
       if (!found) {
-        return { success: false, error: 'No account found with this username' };
+        try {
+          const cloudUser = await cloudGetUser(username);
+          if (cloudUser) {
+            found = cloudUser;
+            // Cache locally on this device
+            setUsers((prev) => {
+              const exists = prev.some((u) => u.id === cloudUser.id);
+              return exists ? prev : [...prev, cloudUser];
+            });
+          }
+        } catch (err) {
+          console.warn('Cloud login fetch error:', err);
+        }
+      }
+
+      if (!found) {
+        return { success: false, error: 'No account found with this username. Please check spelling or create an account.' };
       }
 
       if (found.password !== password) {
@@ -154,18 +193,20 @@ export function useAuth() {
   }, []);
 
   /**
-   * Permanently delete account and all its session records
+   * Permanently delete account and all its session records (both locally and in cloud)
    */
   const deleteAccount = useCallback(
-    (userId) => {
+    async (userId) => {
       const targetId = userId || currentUser?.id;
       if (!targetId) return;
 
-      // 1. Remove user from users list
+      const targetUser = users.find((u) => u.id === targetId) || currentUser;
+
+      // 1. Remove user from local users list
       const updatedUsers = users.filter((u) => u.id !== targetId);
       setUsers(updatedUsers);
 
-      // 2. Remove all sessions belonging to this user
+      // 2. Remove all sessions locally
       try {
         const rawSessions = localStorage.getItem(SESSIONS_STORAGE_KEY);
         if (rawSessions) {
@@ -183,6 +224,15 @@ export function useAuth() {
       if (currentUser?.id === targetId) {
         setCurrentUser(null);
         localStorage.removeItem(CURRENT_USER_KEY);
+      }
+
+      // 4. Delete from Cloud Redis
+      if (targetUser) {
+        try {
+          await cloudDeleteUser(targetUser);
+        } catch (err) {
+          console.warn('Failed to delete user from cloud:', err);
+        }
       }
     },
     [users, currentUser]
