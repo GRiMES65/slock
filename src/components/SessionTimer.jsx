@@ -160,7 +160,7 @@ export default function SessionTimer({ onSessionComplete }) {
         <div className="brutal-card p-5">
           <div className="flex items-center justify-between mb-3 border-b border-zinc-800 pb-2">
             <span className="font-mono text-xs text-zinc-400 font-bold uppercase tracking-wider">
-              [01 // TOTAL TARGET GOAL]
+              [TARGET GOAL]
             </span>
             <span className="font-mono text-xs text-[#FF5500] font-bold">
               {formatMinutes(totalMinutesInput)}
@@ -252,11 +252,11 @@ export default function SessionTimer({ onSessionComplete }) {
 
         {/* Intervals & Breaks Settings */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Study Block */}
+          {/* Study */}
           <div className="brutal-card p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-xs text-zinc-400 font-bold uppercase tracking-wider">
-                [STUDY BLOCK]
+                [STUDY]
               </span>
               <span className="font-mono text-xs text-white font-bold">{studyInterval}m</span>
             </div>
@@ -286,11 +286,11 @@ export default function SessionTimer({ onSessionComplete }) {
             />
           </div>
 
-          {/* Break Duration */}
+          {/* Break */}
           <div className="brutal-card p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-xs text-zinc-400 font-bold uppercase tracking-wider">
-                [BREAK BLOCK]
+                [BREAK]
               </span>
               <span className="font-mono text-xs text-[#F59E0B] font-bold">{breakDuration}m</span>
             </div>
@@ -346,7 +346,7 @@ export default function SessionTimer({ onSessionComplete }) {
           className="w-full brutal-btn py-4 text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
         >
           <Play className="w-5 h-5 fill-current" />
-          <span>Launch Study Protocol</span>
+          <span>Start Timer</span>
         </button>
       </div>
     );

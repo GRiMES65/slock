@@ -194,7 +194,6 @@ export default function SimpleTimer({ onSessionComplete }) {
           <span className="font-mono text-xs text-zinc-400 font-bold uppercase tracking-wider">
             [RAPID LAUNCH PRESETS]
           </span>
-          <span className="font-mono text-[10px] text-zinc-500 uppercase">1-Tap Start</span>
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -202,10 +201,9 @@ export default function SimpleTimer({ onSessionComplete }) {
             <button
               key={p.label}
               onClick={() => handlePreset(p.minutes)}
-              className="p-3 bg-black border-2 border-zinc-800 hover:border-[#FF5500] hover:text-[#FF5500] text-white font-mono font-black text-sm flex flex-col items-center justify-center gap-0.5 transition-all shadow-[2px_2px_0px_#18181b] hover:shadow-[3px_3px_0px_#FF5500]"
+              className="p-3 bg-black border-2 border-zinc-800 hover:border-[#FF5500] hover:text-[#FF5500] text-white font-mono font-black text-sm flex items-center justify-center transition-all shadow-[2px_2px_0px_#18181b] hover:shadow-[3px_3px_0px_#FF5500] cursor-pointer"
             >
               <span>{p.label}</span>
-              <span className="text-[9px] text-zinc-500 font-normal">INSTANT</span>
             </button>
           ))}
         </div>
@@ -286,7 +284,7 @@ export default function SimpleTimer({ onSessionComplete }) {
           className="w-full brutal-btn py-4 text-sm uppercase tracking-wider font-mono flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
         >
           <Play className="w-5 h-5 fill-current" />
-          <span>Engage Timer</span>
+          <span>Start Timer</span>
         </button>
       </div>
     </div>

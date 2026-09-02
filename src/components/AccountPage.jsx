@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, LogIn, UserPlus, LogOut, ShieldCheck, Lock, Trash2, AlertTriangle, Cloud, Smartphone, Laptop, Check } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, ShieldCheck, Trash2, AlertTriangle } from 'lucide-react';
 import { formatHours, formatMinutes } from '../utils/timeUtils';
 
 export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
@@ -31,7 +31,7 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
       if (!res.success) {
         setErrorMsg(res.error);
       } else {
-        setSuccessMsg(`Welcome, ${res.user.username}! Your account is created and cloud sync is enabled.`);
+        setSuccessMsg(`Welcome, ${res.user.username}! Your account is created.`);
         setUsername('');
         setPassword('');
         setConfirmPassword('');
@@ -45,7 +45,7 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
       if (!res.success) {
         setErrorMsg(res.error);
       } else {
-        setSuccessMsg(`Welcome back, ${res.user.username}! Signed in and synced.`);
+        setSuccessMsg(`Welcome back, ${res.user.username}!`);
         setUsername('');
         setPassword('');
       }
@@ -54,7 +54,7 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
 
   const allTimeMinutes = getTotalMinutes ? getTotalMinutes() : 0;
 
-  // IF LOGGED IN: SHOW PRIVATE OPERATOR PROFILE WITH CLOUD STATUS & DANGER ZONE
+  // IF LOGGED IN: SHOW PRIVATE OPERATOR PROFILE & DANGER ZONE
   if (currentUser) {
     return (
       <div className="w-full max-w-xl mx-auto px-4 py-6 pb-24 min-h-screen flex flex-col space-y-6 font-mono">
@@ -66,14 +66,10 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
                 ACCOUNT<span className="text-[#FF5500]">.</span>
               </h1>
             </div>
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mt-0.5">
-              Cloud Sync & Workspace
-            </p>
           </div>
 
-          <span className="text-xs font-bold text-[#FF5500] border border-[#FF5500] bg-black px-2.5 py-1 uppercase shadow-[2px_2px_0px_#FF5500] flex items-center gap-1.5">
-            <Cloud className="w-3 h-3 text-[#FF5500]" />
-            <span>SYNCED</span>
+          <span className="text-xs font-bold text-[#FF5500] border border-[#FF5500] bg-black px-2.5 py-1 uppercase shadow-[2px_2px_0px_#FF5500]">
+            ACTIVE
           </span>
         </header>
 
@@ -90,7 +86,7 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
                 </div>
                 <div className="text-[10px] text-zinc-500 uppercase flex items-center gap-1 mt-0.5">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  <span>Private Cloud Operator</span>
+                  <span>Private Account</span>
                 </div>
               </div>
             </div>
@@ -125,18 +121,6 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Cross-device sync status */}
-        <div className="p-4 bg-zinc-950 border-2 border-zinc-900 space-y-2">
-          <div className="text-xs text-white font-bold uppercase tracking-wider flex items-center gap-2">
-            <Smartphone className="w-3.5 h-3.5 text-[#FF5500]" />
-            <Laptop className="w-3.5 h-3.5 text-[#FF5500]" />
-            <span>Cross-Device Cloud Access</span>
-          </div>
-          <p className="text-[11px] text-zinc-500 font-sans leading-relaxed">
-            You can log into this account (<strong className="text-zinc-300">{currentUser.username}</strong>) on your phone, laptop, or any browser to keep your timers, cadence calendar, and streak continuously synchronized.
-          </p>
         </div>
 
         {/* DANGER ZONE: DELETE ACCOUNT */}
@@ -191,7 +175,7 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
     );
   }
 
-  // IF NOT LOGGED IN: SHOW CLOUD SYNC & ACCOUNT SETUP
+  // IF NOT LOGGED IN: SHOW GUEST VIEW & ACCOUNT SETUP
   return (
     <div className="w-full max-w-xl mx-auto px-4 py-6 pb-24 min-h-screen flex flex-col space-y-6 font-mono">
       <header className="border-b-2 border-zinc-900 pb-4 flex items-center justify-between">
@@ -202,28 +186,12 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
               ACCOUNT<span className="text-[#FF5500]">.</span>
             </h1>
           </div>
-          <p className="text-xs text-zinc-500 uppercase tracking-widest mt-0.5">
-            Cloud Sync & Multi-Device
-          </p>
         </div>
 
         <span className="text-[10px] font-mono font-bold text-zinc-400 border border-zinc-800 bg-zinc-950 px-2.5 py-1 uppercase">
-          LOCAL MODE
+          GUEST
         </span>
       </header>
-
-      {/* Local Mode Explainer Banner */}
-      <div className="brutal-card p-4 bg-black border-2 border-zinc-800 space-y-2">
-        <div className="flex items-center gap-2 text-[#FF5500]">
-          <Laptop className="w-4 h-4" />
-          <span className="text-xs font-bold uppercase tracking-wider">
-            [STORED LOCALLY ON THIS BROWSER]
-          </span>
-        </div>
-        <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-          Your timer sessions and analytics are currently saved locally on this machine. If you want to track your study sessions across devices, create a private account below.
-        </p>
-      </div>
 
       {/* Auth Card */}
       <div className="brutal-card p-6 bg-black border-2 border-zinc-800 space-y-5">
@@ -236,10 +204,11 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
               setErrorMsg('');
               setSuccessMsg('');
             }}
-            className={`py-2 px-3 text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${mode === 'register'
+            className={`py-2 px-3 text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              mode === 'register'
                 ? 'bg-[#FF5500] text-black border-2 border-[#FF5500] shadow-[2px_2px_0px_#ffffff]'
                 : 'bg-zinc-950 text-zinc-400 border border-zinc-800 hover:text-white'
-              }`}
+            }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
             <span>Create Account</span>
@@ -252,10 +221,11 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
               setErrorMsg('');
               setSuccessMsg('');
             }}
-            className={`py-2 px-3 text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${mode === 'login'
+            className={`py-2 px-3 text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              mode === 'login'
                 ? 'bg-[#FF5500] text-black border-2 border-[#FF5500] shadow-[2px_2px_0px_#ffffff]'
                 : 'bg-zinc-950 text-zinc-400 border border-zinc-800 hover:text-white'
-              }`}
+            }`}
           >
             <LogIn className="w-3.5 h-3.5" />
             <span>Sign In</span>
@@ -323,12 +293,12 @@ export default function AccountPage({ auth, sessions = [], getTotalMinutes }) {
             {mode === 'register' ? (
               <>
                 <UserPlus className="w-4 h-4" />
-                <span>Create Account & Enable Cloud Sync</span>
+                <span>Create Personal Account</span>
               </>
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
-                <span>Sign In & Sync Device</span>
+                <span>Sign In</span>
               </>
             )}
           </button>

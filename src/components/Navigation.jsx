@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { Timer, BarChart2, User } from 'lucide-react';
 
 export default function Navigation({ currentUser }) {
-  const usernameLabel = currentUser ? currentUser.username : 'Account';
+  const usernameLabel = currentUser ? currentUser.username : 'Guest';
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-t-2 border-zinc-900 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">

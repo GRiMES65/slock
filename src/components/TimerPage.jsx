@@ -24,13 +24,21 @@ export default function TimerPage({ onSessionComplete, currentUser }) {
           </p>
         </div>
 
-        {currentUser && (
+        {currentUser ? (
           <Link
             to="/account"
             className="font-mono text-[11px] text-zinc-400 hover:text-white uppercase border border-zinc-800 bg-zinc-950 px-2.5 py-1 flex items-center gap-1.5 transition-colors hover:border-zinc-700"
           >
             <User className="w-3 h-3 text-[#FF5500]" />
             <span>{currentUser.username}</span>
+          </Link>
+        ) : (
+          <Link
+            to="/account"
+            className="font-mono text-[11px] text-zinc-500 hover:text-white uppercase border border-zinc-900 bg-black px-2.5 py-1 flex items-center gap-1.5 transition-colors hover:border-zinc-800"
+          >
+            <User className="w-3 h-3 text-zinc-600" />
+            <span>GUEST</span>
           </Link>
         )}
       </header>
