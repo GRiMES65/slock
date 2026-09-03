@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, FastForward, Square, Check, RefreshCw, Layers, Shield, Sparkles } from 'lucide-react';
 import CircularProgress from './CircularProgress';
 import { useTimer } from '../hooks/useTimer';
+import { useTabTitle } from '../hooks/useTabTitle';
 import { formatTime, formatMinutes, playChime } from '../utils/timeUtils';
 
 const QUICK_GOALS = [
@@ -75,6 +76,23 @@ export default function SessionTimer({ onSessionComplete }) {
 
   const timer = useTimer({ onComplete: handlePhaseComplete });
 
+  const sessionLabel =
+    phase === 'break'
+      ? 'Rest'
+      : totalIntervals > 0
+        ? `Focus ${currentInterval}/${totalIntervals}`
+        : 'Focus';
+
+  useTabTitle({
+    timeRemaining: timer.timeRemaining,
+    isRunning: timer.isRunning,
+    isPaused: timer.isPaused,
+    isComplete: phase === 'completed',
+    label: sessionLabel,
+    isBreak: phase === 'break',
+    enabled: phase !== 'idle',
+  });
+
   const startSession = () => {
     const goalSeconds = (totalHours * 60 + totalMinutes) * 60;
     if (goalSeconds <= 0) return;
@@ -90,9 +108,11 @@ export default function SessionTimer({ onSessionComplete }) {
     const firstDuration = Math.min(studyInterval * 60, goalSeconds);
     currentIntervalDurationRef.current = firstDuration;
     timer.start(firstDuration);
+    playChime('start');
   };
 
   const endSessionEarly = () => {
+    playChime('stop');
     // calculate seconds completed inside current interval if studying
     let totalStudiedSecs = elapsedRef.current;
     if (phase === 'studying') {
@@ -124,6 +144,7 @@ export default function SessionTimer({ onSessionComplete }) {
     const nextIntervalIndex = currentInterval + 1;
     setCurrentInterval(nextIntervalIndex);
     setPhase('studying');
+    playChime('start');
 
     const remainingGoal = Math.max(0, totalGoalSeconds - elapsedRef.current);
     const nextStudyDuration = Math.min(studyInterval * 60, remainingGoal);
@@ -465,7 +486,10 @@ export default function SessionTimer({ onSessionComplete }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
         {timer.isPaused ? (
           <button
-            onClick={timer.resume}
+            onClick={() => {
+              timer.resume();
+              playChime('start');
+            }}
             className="brutal-btn py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-2"
           >
             <Play className="w-4 h-4 fill-current" />
@@ -473,7 +497,10 @@ export default function SessionTimer({ onSessionComplete }) {
           </button>
         ) : (
           <button
-            onClick={timer.pause}
+            onClick={() => {
+              timer.pause();
+              playChime('stop');
+            }}
             className="brutal-btn-outline py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-2"
           >
             <Pause className="w-4 h-4" />

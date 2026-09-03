@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Play, Pause, Square, RefreshCw, Check, Clock } from 'lucide-react';
 import CircularProgress from './CircularProgress';
 import { useTimer } from '../hooks/useTimer';
+import { useTabTitle } from '../hooks/useTabTitle';
 import { formatTime, formatMinutes, playChime } from '../utils/timeUtils';
 
 const PRESETS = [
@@ -41,6 +42,16 @@ export default function SimpleTimer({ onSessionComplete }) {
 
   const timer = useTimer({ onComplete: handleComplete });
 
+  useTabTitle({
+    timeRemaining: timer.timeRemaining,
+    isRunning: timer.isRunning,
+    isPaused: timer.isPaused,
+    isComplete,
+    label: 'Focus',
+    isBreak: false,
+    enabled: isActive || isComplete,
+  });
+
   const startTimer = (durationMinutes) => {
     const seconds = durationMinutes * 60;
     if (seconds <= 0) return;
@@ -49,6 +60,7 @@ export default function SimpleTimer({ onSessionComplete }) {
     setIsActive(true);
     setIsComplete(false);
     timer.start(seconds);
+    playChime('start');
   };
 
   const handleStart = () => {
@@ -63,6 +75,7 @@ export default function SimpleTimer({ onSessionComplete }) {
   };
 
   const handleStop = () => {
+    playChime('stop');
     const elapsed = totalDuration - timer.timeRemaining;
     const elapsedMinutes = Math.round(elapsed / 60);
 
@@ -155,7 +168,10 @@ export default function SimpleTimer({ onSessionComplete }) {
         <div className="grid grid-cols-2 gap-3 font-mono">
           {timer.isPaused ? (
             <button
-              onClick={timer.resume}
+              onClick={() => {
+                timer.resume();
+                playChime('start');
+              }}
               className="brutal-btn py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-2"
             >
               <Play className="w-4 h-4 fill-current" />
@@ -163,7 +179,10 @@ export default function SimpleTimer({ onSessionComplete }) {
             </button>
           ) : (
             <button
-              onClick={timer.pause}
+              onClick={() => {
+                timer.pause();
+                playChime('stop');
+              }}
               className="brutal-btn-outline py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-2"
             >
               <Pause className="w-4 h-4" />
